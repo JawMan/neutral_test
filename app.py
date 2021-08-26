@@ -125,7 +125,7 @@ if selected_option == option2:
             # Notes
             notes = st.text_area('Notes', key="{}.13".format(img_id))
         
-            if(st.button('Submit', key="{}.13".format(img_id))):
+            if(st.button('Submit', key="{}.14".format(img_id))):
 
                 if(os.path.isfile('annotations.xlsx')):
                     annotations = pd.read_excel('annotations.xlsx')
