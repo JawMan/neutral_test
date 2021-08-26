@@ -1,2 +1,11 @@
 streamlit
-
+pandas
+numpy
+json
+cv2
+Pillow
+emoji
+xlsxwriter
+matplotlib
+seaborn
+requests
