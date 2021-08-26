@@ -8,3 +8,4 @@ xlsxwriter
 matplotlib
 seaborn
 requests
+openpyxl
