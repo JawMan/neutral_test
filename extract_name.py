@@ -25,7 +25,7 @@ def extract_file_names(directory_path, extensions):
     return file_names
 
 
-parent_directory2 = '/Users/jmehrabanian/PycharmProjects/hatespeech_annotation/img'
+parent_directory2 = '/Users/jmehrabanian/PycharmProjects/hatespeech_annotation/counterfactuals'
 extensions = ['.jpg', '.jpeg', '.png']
 file_names = extract_file_names(parent_directory2, extensions)
 print(file_names)
