@@ -23,26 +23,27 @@ import socket
 import ssl
 import requests
 import ast
+import openpyxl
 
 def get_graph_knowledge(person):
-    
     with open('celeb_graph_knowledge.json', 'r') as fp:
         data = json.load(fp)
-    return data[person]
 
+    if person in data:
+        return data[person]
+    else:
+        return None
 
 def get_name(img_id):
-
     with open('celeb_boxes_10k.json', 'r') as fp:
         data = json.load(fp)
 
     celeb_names = []
-    for i in data[img_id]['names']:
-        celeb_names.append(i)#data[img_id]['names'][0]
+    if img_id in data:
+        for i in data[img_id]['names']:
+            celeb_names.append(i)
 
     return celeb_names
-
-
 
 sns.set_style('darkgrid')
 
@@ -63,9 +64,10 @@ if selected_option == option2:
     results = []
 
     check = False
-    for result in os.listdir(img_path):
-        img_name = result
-        results.append(os.path.join(img_path, img_name))
+    for img_name in os.listdir(img_path):
+        img_path_full = os.path.join(img_path, img_name)
+        print("Image Path:", img_path_full)
+        results.append(img_path_full)
     
     if(len(results) == 0):
         st.markdown("<h3 style='text-align: center;'>Congratulations, you have nothing to label!​​​​​​​​​​​​​​​​​​​​​ &#x1F60a;</h3>", unsafe_allow_html=True)
@@ -76,12 +78,15 @@ if selected_option == option2:
         img_id = result
         img_name = result
         img_score = result
+
         img = cv2.imread(img_name)
+        if img is None:
+            print("Failed to load image")
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
         height, width, channels = img.shape
         
-        col1, col2 = st.beta_columns(2)
+        col1, col2 = st.columns(2)
         with col1:
             st.image(img, width=int(width*0.5))
             #st.text(img_id)
@@ -89,7 +94,7 @@ if selected_option == option2:
             for i in celebs:
                 st.text("Celebrity name : {}".format(i))#get_name(img_id[6:])
                 info = get_graph_knowledge(i)#get_name(img_id[6:])
-                new_title = '<p style="font-family:sans-serif; color: #2e4053   ; font-size: 15px;"> ' + info + '</p>'
+                new_title = '<p style="font-family:sans-serif; color: #2e4053; font-size: 15px;"> ' + (info or '') + '</p>'
                 st.markdown(new_title, unsafe_allow_html=True)
             #st.markdown("Information : {}".format(get_graph_knowledge(get_name(img_id[6:]))))
 
@@ -111,7 +116,7 @@ if selected_option == option2:
             
             # else :
             # Image-text relation
-            image_text_relation = st.radio('Image-text relation', ['None', 'Supporing', 'Need'], key="{}.9".format(img_id))
+            image_text_relation = st.radio('Image-text relation', ['None', 'Supporting', 'Need'], key="{}.9".format(img_id))
 
             # Translation
             #translation = st.text_area('Translation', key="{}.10".format(img_id))
@@ -127,8 +132,8 @@ if selected_option == option2:
         
             if(st.button('Submit', key="{}.14".format(img_id))):
 
-                if(os.path.isfile('annotations.xlsx')):
-                    annotations = pd.read_excel('annotations.xlsx')
+                if(os.path.isfile('annotations_A.xlsx')):
+                    annotations = pd.read_excel('annotations_A.xlsx', engine='openpyxl')
 
                 else:
                     annotations = pd.DataFrame(columns = ['ID', 'Image-text relation', 'Hate', 'Discard', 'Notes'])
@@ -179,10 +184,6 @@ if selected_option == option2:
                 annotations.loc[annotations.ID == img_id[6:], "Discard"] = discared_handler
                 annotations.loc[annotations.ID == img_id[6:], "Notes"] = notes_handler
 
-                writer = pd.ExcelWriter('annotations.xlsx',engine = 'xlsxwriter')
-                annotations.to_excel(writer,sheet_name = 'Sheet1')
-                writer.save()
-
-
-
-
+                writer = pd.ExcelWriter('annotations_A.xlsx', engine='xlsxwriter')
+                annotations.to_excel(writer, sheet_name='Results1', index=False)
+                writer.close()

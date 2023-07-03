@@ -1,0 +1,22 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+streamlit = "*"
+pandas = "*"
+numpy = "*"
+opencv-python-headless = "*"
+pillow = "*"
+emoji = "*"
+xlsxwriter = "*"
+matplotlib = "*"
+seaborn = "*"
+requests = "*"
+openpyxl = "*"
+
+[dev-packages]
+
+[requires]
+python_version = "3.11"
