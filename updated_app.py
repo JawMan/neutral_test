@@ -68,7 +68,7 @@ for result in results:
         col2 = container.columns([1])[0]
 
         col1.image(result, width=int(width*0.5))
-        col1.text("Image Path: " + img_id)
+        #col1.text("Image Path: " + img_id)
         celebs = get_name(img_id[6:])
         for i in celebs:
             col1.text("Celebrity name: {}".format(i))
@@ -86,8 +86,14 @@ for result in results:
         st.markdown(
             "Please enter the necessary information and select the appropriate options to annotate the meme:"
         )
-        image_text_relation = col2.radio('Image-text relation', ['None', 'Supporting', 'Need'], key="{}.9".format(img_id))
-        hate = col2.selectbox('Hateful', ['Hateful', 'Not hateful'], key="{}.11".format(img_id))
+        image_text_relation = col2.radio('Image-text relation', ['none', 'neutral', 'needs context', 'text supports hate', 'image supports hate'], key="{}.9".format(img_id))
+
+        hate_levels = ['0 - Non hateful', '1', '2', '3', '4', '5', '6  - Hateful']
+        selected_level = col2.radio('Hatefulness scale (from 0=Non hateful to 6=Hateful)', options=hate_levels, key="{}.11".format(img_id), index=0)
+
+        col2.markdown('<style>div.row-widget.stRadio > div{flex-direction:row;}</style>', unsafe_allow_html=True)
+        col2.markdown('<style>.row-widget.stRadio div div{padding:0px 8px;}</style>', unsafe_allow_html=True)
+
         discard = col2.checkbox('Press here if you want to discard this meme!', key="{}.12".format(img_id))
         notes = col2.text_area('Notes', key="{}.13".format(img_id))
 
@@ -95,18 +101,18 @@ for result in results:
             annotation_row = annotations.loc[annotations['ID'] == img_id[6:]]
             if annotation_row.empty:
                 new_annotation = pd.DataFrame(
-                    {'ID': [img_id[6:]], 'Image-text relation': [image_text_relation], 'Hate': [hate],
+                    {'ID': [img_id[6:]], 'Image-text relation': [image_text_relation], 'Hatefulness scale': [selected_level],
                      'Discard': [discard], 'Notes': [notes]})
                 annotations = pd.concat([annotations, new_annotation], ignore_index=True)
 
             else:
                 annotation_row_index = annotation_row.index[0]
                 annotations.loc[annotation_row_index, 'Image-text relation'] = image_text_relation
-                annotations.loc[annotation_row_index, 'Hate'] = hate
+                annotations.loc[annotation_row_index, 'Hatefulness scale'] = selected_level
                 annotations.loc[annotation_row_index, 'Discard'] = discard
                 annotations.loc[annotation_row_index, 'Notes'] = notes
 
             annotations.to_excel('annotations.xlsx', index=False)
-            col2.success('Annotation submitted successfully!')
+            col2.success('Annotation submitted successfully!'.format(image_text_relation, hate_levels))
 # Display the annotations DataFrame
 st.write('Annotations:', annotations)
