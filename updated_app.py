@@ -1,9 +1,17 @@
+import numpy as np
 import streamlit as st
 import pandas as pd
 import os
 import cv2
 import json
 import textwrap
+import matplotlib.pyplot as plt
+from matplotlib import patches
+from datetime import datetime, timedelta
+import time
+import datetime
+
+
 
 def get_graph_knowledge(person):
     with open('celeb_graph_knowledge.json', 'r') as fp:
@@ -31,17 +39,20 @@ def format_information(information):
     formatted_info = textwrap.fill(formatted_info, width=60)
     return formatted_info
 
-
+def format_duration(duration):
+    seconds = int(duration)
+    formatted_time = str(timedelta(seconds=seconds))
+    return formatted_time
 
 selected_option = 'Annotation'
 
-img_folder = './img/'
+img_folder = './jm_memes/'
 results = [os.path.join(img_folder, img_name) for img_name in os.listdir(img_folder)]
 
 if not results:
     st.markdown("<h3 style='text-align: center;'>Congratulations, you have nothing to label!​​​​​​​​​​​​​​​​​​​​​ &#x1F60a;</h3>", unsafe_allow_html=True)
 
-annotations = pd.read_excel('annotations.xlsx', engine='openpyxl') if os.path.isfile('annotations.xlsx') else pd.DataFrame(columns=['ID', 'Image-text relation', 'Hate', 'Discard', 'Notes'])
+annotations = pd.read_excel('annotations.xlsx', engine='openpyxl') if os.path.isfile('annotations.xlsx') else pd.DataFrame(columns=['ID', 'Image-text relation','checkbox', 'Decision part','Hatefulness scale', 'Confidence score', 'Discard'])
 
 col1, col2 = st.columns([2, 1])
 st.title("Hate Speech Annotation")
@@ -49,7 +60,26 @@ st.markdown("<h2>What kind of hateful meme is this?</h2>", unsafe_allow_html=Tru
 st.markdown(
             "Please enter the necessary information and select the appropriate options to annotate the meme:"
         )
+
+def on_number_click(number, decision_parts):
+    if number not in decision_parts:
+        decision_parts.append(number)
+        st.text_input('What exactly makes this meme hateful or non hateful from your perspective? (prominent tokens or elements of image)', value=', '.join(decision_parts))
+
+def on_zero_click(decision_parts):
+    if '0' not in decision_parts:
+        decision_parts.append('0')
+        st.text_input('What exactly makes this meme hateful or non-hateful from your perspective? (prominent tokens or elements of image)', value=', '.join(decision_parts))
+
+session_state = st.session_state
+#first_submit_clicked = False
+start_time = None
+checkbox = []
+decision_parts = ""
+img_index = 0
+
 for result in results:
+    img_index += 1
     img_id = result
     img_name = result
     img_score = result
@@ -67,8 +97,28 @@ for result in results:
         col1 = container.columns([2])[0]
         col2 = container.columns([1])[0]
 
+        #col1.text("Index: {}".format(img_index))
         col1.image(result, width=int(width*0.5))
+        # Grid selection
         #col1.text("Image Path: " + img_id)
+        image_text_relation = col1.radio('Image-text relation',
+                                         ['none', 'neutral', 'needs context', 'text supports hate',
+                                          'image supports hate'], key="{}.9".format(img_id))
+        col1.text("If you classify the image or parts of the image as hateful\n"
+                  "please mark what you would consider as hateful or offensive \n"
+                  "and choose between 0 and 16, where 0 refers to the whole image\n"
+                  "and the remaining 1-16 refer to the individual parts of the image")
+
+        grid_selection = []
+        with col1:
+            parts_columns = st.columns(4)  # Create 4 columns for the parts
+            for i in range(0, 17):
+                grid_selection.append(parts_columns[i % 4].checkbox(str(i), key="{}.grid.{}".format(img_id, i)))
+
+        # Parts responsible for decision
+        #decision_parts = col2.text_input('Which part is responsible for your decision?', key="{}.16".format(img_id))
+        decision_parts = col2.text_area('What exactly makes this meme hateful or non hateful from your perspective? (prominent tokens or elements of image)', key="{}.14".format(img_id))
+
         celebs = get_name(img_id[6:])
         for i in celebs:
             col1.text("Celebrity name: {}".format(i))
@@ -86,33 +136,152 @@ for result in results:
         st.markdown(
             "Please enter the necessary information and select the appropriate options to annotate the meme:"
         )
-        image_text_relation = col2.radio('Image-text relation', ['none', 'neutral', 'needs context', 'text supports hate', 'image supports hate'], key="{}.9".format(img_id))
 
-        hate_levels = ['0 - Non hateful', '1', '2', '3', '4', '5', '6  - Hateful']
-        selected_level = col2.radio('Hatefulness scale (from 0=Non hateful to 6=Hateful)', options=hate_levels, key="{}.11".format(img_id), index=0)
+
+        hate_levels = ['0 - Non hateful', '1', '2', '3', '4', '5 - Hateful']
+        selected_level = col2.radio('Hatefulness scale (Choose from 0=Non hateful to 5=Hateful)', options=hate_levels, key="{}.11".format(img_id), index=0)
 
         col2.markdown('<style>div.row-widget.stRadio > div{flex-direction:row;}</style>', unsafe_allow_html=True)
         col2.markdown('<style>.row-widget.stRadio div div{padding:0px 8px;}</style>', unsafe_allow_html=True)
 
-        discard = col2.checkbox('Press here if you want to discard this meme!', key="{}.12".format(img_id))
-        notes = col2.text_area('Notes', key="{}.13".format(img_id))
+        confidence_levels = ['0 - Not confident ', '1', '2', '3', '4', '5 - Confident']
+        selected_confidence = col2.radio('Confidence score - How much confident are you by giving that score? (Choose from 0=Not confident to 5=Confident)', options=confidence_levels,
+                                    key="{}.12".format(img_id), index=0)
 
-        if col2.button('Submit', key="{}.14".format(img_id)):
-            annotation_row = annotations.loc[annotations['ID'] == img_id[6:]]
-            if annotation_row.empty:
-                new_annotation = pd.DataFrame(
-                    {'ID': [img_id[6:]], 'Image-text relation': [image_text_relation], 'Hatefulness scale': [selected_level],
-                     'Discard': [discard], 'Notes': [notes]})
-                annotations = pd.concat([annotations, new_annotation], ignore_index=True)
+        col2.markdown('<style>div.row-widget.stRadio > div{flex-direction:row;}</style>', unsafe_allow_html=True)
+        col2.markdown('<style>.row-widget.stRadio div div{padding:0px 6px;}</style>', unsafe_allow_html=True)
+        discard = col2.checkbox('Press here if you want to discard this meme!', key="{}.13".format(img_id))
 
-            else:
-                annotation_row_index = annotation_row.index[0]
-                annotations.loc[annotation_row_index, 'Image-text relation'] = image_text_relation
-                annotations.loc[annotation_row_index, 'Hatefulness scale'] = selected_level
-                annotations.loc[annotation_row_index, 'Discard'] = discard
-                annotations.loc[annotation_row_index, 'Notes'] = notes
 
-            annotations.to_excel('annotations.xlsx', index=False)
-            col2.success('Annotation submitted successfully!'.format(image_text_relation, hate_levels))
+        # Display grid overlay on the image
+        fig, ax = plt.subplots()
+
+        ax.imshow(img)
+        ax.axis('on')
+        # Add numbers to the grid
+        for i in range(1, 17):
+            row = (i - 1) // 4
+            col = (i - 1) % 4
+            rect = patches.Rectangle((col * width / 4, row * height / 4), width / 4, height / 4, linewidth=2,
+                                     edgecolor='r', facecolor='none')
+            ax.add_patch(rect)
+            number_text = ax.text((col + 0.5) * width / 4, (row + 0.5) * height / 4, str(i), fontsize=30, weight='bold',
+                                  ha='center', va='center', color='r')
+
+            number_text.figure.canvas.mpl_connect('button_press_event',
+                                                  lambda event: on_number_click(int(number_text.get_text()),
+                                                                                decision_parts))
+
+        ax.grid(True, linestyle='-', linewidth=1, color='r')
+        ax.set_xticklabels([])
+        ax.set_yticklabels([])
+        ax.set_xticks(np.arange(0.5, width, width / 4))
+        ax.set_yticks(np.arange(0.5, height, height / 4))
+
+        # Timer-related variables
+        session_state = st.session_state
+        if 'start_time' not in session_state:
+            session_state.start_time = None
+
+        col1.pyplot(fig)
+
+        if img_index == 1:
+            if col2.button('Submit t1', key="{}.15".format(img_id)):
+                if session_state.start_time is None:
+                    session_state.start_time = time.time()
+                    #st.write('Timer started.')
+                else:
+                    st.warning(' ')
+                    # Annotate and save the existing data
+                annotation_row = annotations.loc[annotations['ID'] == img_id[6:]]
+                # Update checkbox with selected checkboxes
+                checkbox = [str(i) for i, value in enumerate(grid_selection) if value]
+                if annotation_row.empty:
+                    new_annotation = pd.DataFrame({
+                        'ID': [img_id[6:]],
+                        'Image-text relation': [image_text_relation],
+                        'checkbox': [','.join(checkbox)],
+                        'Decision part': [decision_parts],
+                        'Hatefulness scale': [selected_level],
+                        'Confidence score': [selected_confidence],
+                        'Discard': [discard]
+                    })
+                    annotations = pd.concat([annotations, new_annotation], ignore_index=True)
+                else:
+                    annotation_row_index = annotation_row.index[0]
+                    annotations.loc[annotation_row_index, 'Image-text relation'] = image_text_relation
+                    annotations.loc[annotation_row_index, 'checkbox'] = ','.join(checkbox)
+                    annotations.loc[annotation_row_index, 'Decision part'] = decision_parts
+                    annotations.loc[annotation_row_index, 'Hatefulness scale'] = selected_level
+                    annotations.loc[annotation_row_index, 'Confidence score'] = selected_confidence
+                    annotations.loc[annotation_row_index, 'Discard'] = discard
+                annotations.to_excel('annotations.xlsx', index=False)
+                col2.success('Annotation submitted successfully!')
+        elif img_index == 2:
+            if col2.button('Submit t2', key="{}.16".format(img_id)):
+                if session_state.start_time is not None:
+                    end_time = time.time()
+                    duration = round(end_time - session_state.start_time, 2)
+                    formatted_duration = format_duration(duration)
+                    #st.write(f'Timer stopped. Duration: {formatted_duration}')
+
+                # Annotate and save the formatted elapsed time
+                    annotation_row = annotations.loc[annotations['ID'] == img_id[6:]]
+                    # Update checkbox with selected checkboxes
+                    checkbox = [str(i) for i, value in enumerate(grid_selection) if value]
+                    if annotation_row.empty:
+                        new_annotation = pd.DataFrame({
+                            'ID': [img_id[6:]],
+                            'Image-text relation': [image_text_relation],
+                            'checkbox': [','.join(checkbox)],
+                            'Decision part': [decision_parts],
+                            'Hatefulness scale': [selected_level],
+                            'Confidence score': [selected_confidence],
+                            'Discard': [discard],
+                            'Elapsed Time (s)': [formatted_duration]  # Save the formatted elapsed time
+                        })
+                        annotations = pd.concat([annotations, new_annotation], ignore_index=True)
+                    else:
+                        annotation_row_index = annotation_row.index[0]
+                        annotations.loc[annotation_row_index, 'Image-text relation'] = image_text_relation
+                        annotations.loc[annotation_row_index, 'checkbox'] = ','.join(checkbox)
+                        annotations.loc[annotation_row_index, 'Decision part'] = decision_parts
+                        annotations.loc[annotation_row_index, 'Hatefulness scale'] = selected_level
+                        annotations.loc[annotation_row_index, 'Confidence score'] = selected_confidence
+                        annotations.loc[annotation_row_index, 'Discard'] = discard
+                        annotations.loc[
+                            annotation_row_index, 'Elapsed Time (s)'] = formatted_duration  # Save the formatted elapsed time
+
+                    annotations.to_excel('annotations.xlsx', index=False)
+                    col2.success('Annotation submitted successfully!')
+
+        else:
+            if col2.button('Submit', key="{}.17".format(img_id)):
+                annotation_row = annotations.loc[annotations['ID'] == img_id[6:]]
+                # Update checkbox with selected checkboxes
+                checkbox = [str(i) for i, value in enumerate(grid_selection) if value]
+                if annotation_row.empty:
+                    new_annotation = pd.DataFrame({
+                        'ID': [img_id[6:]],
+                        'Image-text relation': [image_text_relation],
+                        'checkbox': [','.join(checkbox)],
+                        'Decision part': [decision_parts],
+                        'Hatefulness scale': [selected_level],
+                        'Confidence score': [selected_confidence],
+                        'Discard': [discard]
+                    })
+                    annotations = pd.concat([annotations, new_annotation], ignore_index=True)
+                else:
+                    annotation_row_index = annotation_row.index[0]
+                    annotations.loc[annotation_row_index, 'Image-text relation'] = image_text_relation
+                    annotations.loc[annotation_row_index, 'checkbox'] = ','.join(checkbox)
+                    annotations.loc[annotation_row_index, 'Decision part'] = decision_parts
+                    annotations.loc[annotation_row_index, 'Hatefulness scale'] = selected_level
+                    annotations.loc[annotation_row_index, 'Confidence score'] = selected_confidence
+                    annotations.loc[annotation_row_index, 'Discard'] = discard
+
+                annotations.to_excel('annotations.xlsx', index=False)
+                col2.success('Annotation submitted successfully!')
+
 # Display the annotations DataFrame
 st.write('Annotations:', annotations)
