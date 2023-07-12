@@ -1,3 +1,4 @@
+
 import numpy as np
 import streamlit as st
 import pandas as pd
@@ -10,7 +11,8 @@ from matplotlib import patches
 from datetime import datetime, timedelta
 import time
 import datetime
-
+import dropbox
+from dropbox.exceptions import AuthError, ApiError
 
 
 def get_graph_knowledge(person):
@@ -44,10 +46,24 @@ def format_duration(duration):
     formatted_time = str(timedelta(seconds=seconds))
     return formatted_time
 
+
+DROPBOX_ACCESS_TOKEN = "sl.BiHTXg0fQ7KHxJbcHio5v9weS0ZlB9Cr9tk4JOmHEgmj28zIpSFQDGOSGvbuUcxirBD-EbqYqb0z-wLdFZ9UI7QCryUQFRO_Uc2gwHP68vNnp9Hqx3eeza6vCwh2FZJZKsNEE11Q"
+
+
+dataset_options = {
+    "Dataset1": "./jm_memes/Dataset1/",
+    "Dataset2": "./jm_memes/Dataset2/",
+    "Dataset3": "./jm_memes/Dataset3/",
+    "Dataset4": "./jm_memes/Dataset4/"
+}
+# Create selectbox for choosing the dataset
+selected_dataset = st.selectbox("BEFORE YOU START: Please select a dataset", list(dataset_options.keys()))
+# Load the selected dataset based on the user's choice
+dataset_folder = dataset_options[selected_dataset]
 selected_option = 'Annotation'
 
 img_folder = './jm_memes/'
-results = [os.path.join(img_folder, img_name) for img_name in os.listdir(img_folder)]
+results = [os.path.join(dataset_folder, img_name) for img_name in os.listdir(dataset_folder)]
 
 if not results:
     st.markdown("<h3 style='text-align: center;'>Congratulations, you have nothing to label!​​​​​​​​​​​​​​​​​​​​​ &#x1F60a;</h3>", unsafe_allow_html=True)
@@ -70,6 +86,34 @@ def on_zero_click(decision_parts):
     if '0' not in decision_parts:
         decision_parts.append('0')
         st.text_input('What exactly makes this meme hateful or non-hateful from your perspective? (prominent tokens or elements of image)', value=', '.join(decision_parts))
+
+def upload_to_dropbox(annotations):
+    try:
+        # Create a Dropbox client
+        dbx = dropbox.Dropbox(DROPBOX_ACCESS_TOKEN)
+
+        timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        annotations_file = f"annotations_{timestamp}.xlsx"
+
+        # Define the path to save the annotation table in Dropbox
+        dropbox_path = f"/{annotations_file}"
+        # Save the annotation table as a local file
+        annotations.to_excel(annotations_file, index=False)
+        # Upload the annotation table to Dropbox
+        with open(annotations_file, "rb") as file:
+            dbx.files_upload(file.read(), dropbox_path)
+
+        # Delete the local file after uploading
+        os.remove(annotations_file)
+
+        return True
+    except (dropbox.exceptions.AuthError, dropbox.exceptions.ApiError) as e:
+        st.error("An error occurred while uploading the annotation table to Dropbox.")
+        st.error(str(e))
+        return False
+
+
+annotations_file = "annotations.xlsx"
 
 session_state = st.session_state
 #first_submit_clicked = False
@@ -178,7 +222,7 @@ for result in results:
         ax.set_xticks(np.arange(0.5, width, width / 4))
         ax.set_yticks(np.arange(0.5, height, height / 4))
 
-        # Timer-related variables
+        # timer-related variables
         session_state = st.session_state
         if 'start_time' not in session_state:
             session_state.start_time = None
@@ -192,9 +236,9 @@ for result in results:
                     #st.write('Timer started.')
                 else:
                     st.warning(' ')
-                    # Annotate and save the existing data
+                    # annotate and save the existing data
                 annotation_row = annotations.loc[annotations['ID'] == img_id[6:]]
-                # Update checkbox with selected checkboxes
+                # checkbox with selected checkboxes
                 checkbox = [str(i) for i, value in enumerate(grid_selection) if value]
                 if annotation_row.empty:
                     new_annotation = pd.DataFrame({
@@ -283,5 +327,18 @@ for result in results:
                 annotations.to_excel('annotations.xlsx', index=False)
                 col2.success('Annotation submitted successfully!')
 
-# Display the annotations DataFrame
-st.write('Annotations:', annotations)
+
+
+# load the annotation table from the file (if exists)
+annotations_file = "annotations.xlsx"
+annotations = pd.read_excel(annotations_file) if os.path.isfile(annotations_file) else pd.DataFrame()
+
+#st.markdown("<h3>Annotation Results</h3>", unsafe_allow_html=True)
+#st.write('Annotations:', annotations)
+st.subheader('Annotations')
+st.dataframe(annotations)
+#st.write(annotations)
+
+if st.button("Upload Results"):
+    if upload_to_dropbox(annotations):
+        st.success("Annotation table uploaded successfully to Dropbox! Thanks a lot!")
