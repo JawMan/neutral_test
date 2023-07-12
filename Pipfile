@@ -15,6 +15,7 @@ matplotlib = "*"
 seaborn = "*"
 requests = "*"
 openpyxl = "*"
+dropbox = "*"
 
 [dev-packages]
 
