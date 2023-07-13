@@ -46,10 +46,6 @@ def format_duration(duration):
     formatted_time = str(timedelta(seconds=seconds))
     return formatted_time
 
-
-DROPBOX_ACCESS_TOKEN = "sl.BiHTXg0fQ7KHxJbcHio5v9weS0ZlB9Cr9tk4JOmHEgmj28zIpSFQDGOSGvbuUcxirBD-EbqYqb0z-wLdFZ9UI7QCryUQFRO_Uc2gwHP68vNnp9Hqx3eeza6vCwh2FZJZKsNEE11Q"
-
-
 dataset_options = {
     "Dataset1": "./jm_memes/Dataset1/",
     "Dataset2": "./jm_memes/Dataset2/",
@@ -87,10 +83,10 @@ def on_zero_click(decision_parts):
         decision_parts.append('0')
         st.text_input('What exactly makes this meme hateful or non-hateful from your perspective? (prominent tokens or elements of image)', value=', '.join(decision_parts))
 
-def upload_to_dropbox(annotations):
+def upload_to_dropbox(annotations, access_token):
     try:
         # Create a Dropbox client
-        dbx = dropbox.Dropbox(DROPBOX_ACCESS_TOKEN)
+        dbx = dropbox.Dropbox(access_token)
 
         timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         annotations_file = f"annotations_{timestamp}.xlsx"
@@ -339,6 +335,13 @@ st.subheader('Annotations')
 st.dataframe(annotations)
 #st.write(annotations)
 
+# Prompt the user to enter the Dropbox access token
+dropbox_access_token = st.text_input("Enter your Dropbox access token")
+
 if st.button("Upload Results"):
-    if upload_to_dropbox(annotations):
-        st.success("Annotation table uploaded successfully to Dropbox! Thanks a lot!")
+    if dropbox_access_token:
+        success = upload_to_dropbox(annotations, dropbox_access_token)
+        if success:
+            st.success("Annotation table uploaded successfully! Thanks for your patience :)")
+    else:
+        st.warning("Please enter your Dropbox access token.")
