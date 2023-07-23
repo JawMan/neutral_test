@@ -16,6 +16,7 @@ seaborn = "*"
 requests = "*"
 openpyxl = "*"
 dropbox = "*"
+pdf2image = "*"
 
 [dev-packages]
 

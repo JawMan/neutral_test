@@ -1,0 +1,12 @@
+button.css-32r2nf.ef3psqc11 {
+    background-color: greenyellow;
+    text-align: center;
+}
+.next-button {
+  text-align: center;
+}
+
+/* Scroll to the created anchor */
+.scroll-to-top {
+    scroll-margin-top: 100px; /* Adjust this value as needed to offset the height of your header/title */
+}
