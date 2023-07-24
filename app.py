@@ -134,7 +134,7 @@ def show_introduction():
     image_content = convert_pdf_to_image(file_content)
     if image_content:
         image = Image.open(BytesIO(image_content))
-        st.image(image, format="PNG", width=800)
+        st.image(image, width=800)
     else:
         st.write("Unable to preview the PDF.")
 
