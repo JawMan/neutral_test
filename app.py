@@ -128,6 +128,7 @@ def show_introduction():
         )
     # Display a preview of the PDF file
     st.markdown("### Preview of Instructions (PDF)")
+    st.write("Please download and read the instructions carefully!")
     st.write("Here is a preview of the first page of the instructions document:")
 
     # Convert the first page of the PDF to an image
@@ -216,7 +217,7 @@ def show_annotation():
                   "It investigates how the language and image interact to convey a specific\n"
                   "meaning or message. Understanding the image-text relationship in the context\n"
                   "of offensive memes is crucial for assessing the purpose and effects of such content.\n\n"
-                  "**Please select one or more of the following option:**")
+                  "**Please select one or more of the following options:**")
         image_text_relation_options = ['neutral', 'needs context', 'text supports image', 'image supports text']
         with col1:
             cols = st.columns(5)
@@ -233,7 +234,7 @@ def show_annotation():
                                             'text&image supports hate'], key="{}.9".format(img_id))
 
         decision_parts = col1.text_area(
-            '**What exactly makes this meme hateful or non hateful from your perspective? (prominent tokens or elements of image)**',
+            '**What exactly makes this meme hateful or non hateful from your perspective? (prominent tokens or elements of meme)**',
             key="{}.14".format(img_id))
 
         celebs = get_name(img_id[6:])
