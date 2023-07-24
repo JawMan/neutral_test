@@ -17,7 +17,7 @@ from dropbox.exceptions import AuthError, ApiError
 import streamlit.components.v1 as components
 from pdf2image import convert_from_bytes
 import base64
-import requests
+import fitz
 
 def get_graph_knowledge(person):
     with open('celeb_graph_knowledge.json', 'r') as fp:
@@ -102,23 +102,12 @@ def show_image(image_path):
     st.image(image_path, width=500)
 
 def convert_pdf_to_image(pdf_content):
-    # Convert PDF to image using pdf2image.io service
-    url = "https://pdf2image.io/api/convert"
-    data = {
-        "file": base64.b64encode(pdf_content).decode("utf-8"),
-        "options": {
-            "format": "png",
-            "page": 1,
-            "density": 300
-        }
-    }
-    response = requests.post(url, json=data)
+    # Convert PDF to image using PyMuPDF
+    pdf_document = fitz.open(stream=pdf_content, filetype="pdf")
+    page = pdf_document.load_page(0)  # Load the first page
+    image = page.get_pixmap(alpha=False)
 
-    if response.status_code == 200:
-        return response.json()["data"]["url"]
-    else:
-        st.write("Unable to preview the PDF.")
-        return None
+    return image.as_bytes()
 def show_introduction():
     st.title("Welcome to the Annotation Tool!")
     st.write("This is the introduction section.")
@@ -136,10 +125,9 @@ def show_introduction():
     st.write("Here is a preview of the first page of the instructions document:")
 
     # Convert the first page of the PDF to an image
-    image_url = convert_pdf_to_image(file_content)
-    if image_url:
-        # Display the first page image
-        st.image(image_url, width=800)
+    image_content = convert_pdf_to_image(file_content)
+    if image_content:
+        st.image(image_content, format="PNG", width=800)
     else:
         st.write("Unable to preview the PDF.")
 

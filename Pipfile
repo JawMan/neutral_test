@@ -17,6 +17,7 @@ requests = "*"
 openpyxl = "*"
 dropbox = "*"
 pdf2image = "*"
+pymupdf = "*"
 
 [dev-packages]
 

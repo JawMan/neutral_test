@@ -11,4 +11,4 @@ requests
 openpyxl
 dropbox
 pdf2image
-requests
+PyMuPDF
