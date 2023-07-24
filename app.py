@@ -18,6 +18,8 @@ import streamlit.components.v1 as components
 from pdf2image import convert_from_bytes
 import base64
 import fitz
+from PIL import Image
+from io import BytesIO
 
 def get_graph_knowledge(person):
     with open('celeb_graph_knowledge.json', 'r') as fp:
@@ -107,7 +109,11 @@ def convert_pdf_to_image(pdf_content):
     page = pdf_document.load_page(0)  # Load the first page
     image = page.get_pixmap(alpha=False)
 
-    return image.as_bytes()
+    # Convert Pixmap to bytes using Pillow (PIL) library
+    image_bytes = image.tobytes()
+
+    return image_bytes
+
 def show_introduction():
     st.title("Welcome to the Annotation Tool!")
     st.write("This is the introduction section.")
@@ -127,7 +133,8 @@ def show_introduction():
     # Convert the first page of the PDF to an image
     image_content = convert_pdf_to_image(file_content)
     if image_content:
-        st.image(image_content, format="PNG", width=800)
+        image = Image.open(BytesIO(image_content))
+        st.image(image, format="PNG", width=800)
     else:
         st.write("Unable to preview the PDF.")
 
