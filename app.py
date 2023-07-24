@@ -127,8 +127,8 @@ def show_introduction():
             mime="application/pdf"
         )
     # Display a preview of the PDF file
-    st.markdown("### Preview of Instructions (PDF)")
     st.write("Please download and read the instructions carefully!")
+    st.markdown("### Preview of Instructions (PDF)")
     st.write("Here is a preview of the first page of the instructions document:")
 
     # Convert the first page of the PDF to an image
