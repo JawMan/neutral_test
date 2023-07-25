@@ -2,14 +2,17 @@ import streamlit as st
 
 def scroll_to_top():
     """Scrolls to the top of the page."""
-    js_code = """
-    function scrollToTop() {
-        window.scrollTo(0, 0);
-    }
-    """
+    js = '''
+    <script>
+        var body = window.parent.document.querySelector(".main");
+        console.log(body);
+        body.scrollTop = 0;
+    </script>
+    '''
+    st.components.v1.html(js)
     if "scroll_to_top" not in st.session_state:
-        st.session_state["scroll_to_top"] = js_code
-    st.write(js_code, unsafe_allow_html=True)
+        st.session_state["scroll_to_top"] = js
+    st.write(js, unsafe_allow_html=True)
 
 def next_button():
     """Clicks the next button and scrolls to the top of the page."""

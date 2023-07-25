@@ -1,0 +1,21 @@
+button.css-j1dlck.ef3psqc11 {
+    background-color: greenyellow;
+    text-align: center;
+}
+.custom-next-button {
+    text-align: center;
+    background-color: greenyellow;
+    border: none;
+    color: white;
+    padding: 10px 20px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+    border-radius: 5px;
+}
+
+/* Scroll to the created anchor */
+.scroll-to-top {
+    scroll-margin-top: 100px; /* Adjust this value as needed to offset the height of your header/title */
+}

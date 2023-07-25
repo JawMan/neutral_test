@@ -91,6 +91,13 @@ def initialize_session_state():
     if 'current_index' not in st.session_state:
         st.session_state.current_index = 0
 
+def initialize_session_state_intro():
+    if 'pdf_downloaded' not in st.session_state:
+        st.session_state.pdf_downloaded = False
+
+    if 'go_to_annotation' not in st.session_state:
+        st.session_state.go_to_annotation = False
+
 def show_image_fin(img_id, col):
     img = cv2.imread(img_id)
     if img is None:
@@ -120,32 +127,59 @@ def show_introduction():
 
     with open("annotation_tool_instructions.pdf", "rb") as file:
         file_content = file.read()
-        st.download_button(
-            label="Download Instructions (PDF)",
+        if st.download_button(
+            label="**Download Instructions (PDF)**",
             data=file_content,
             file_name="annotation_tool_instructions.pdf",
             mime="application/pdf"
-        )
-    # Display a preview of the PDF file
-    st.write("Please download and read the instructions carefully!")
-    st.markdown("### Preview of Instructions (PDF)")
-    st.write("Here is a preview of the first page of the instructions document:")
+        ):
+            st.session_state.pdf_downloaded = True
 
-    # Convert the first page of the PDF to an image
-    image_content = convert_pdf_to_image(file_content)
-    if image_content:
-        image = Image.open(BytesIO(image_content))
-        st.image(image, width=700)
-    else:
-        st.write("Unable to preview the PDF.")
+            #st.cache_resource.pdf_downloaded = True
+
+    # Display a preview of the PDF file
+    st.markdown("**Please download and read the guidelines carefully before starting the annotation process!**\n\n")
+    st.markdown("### Example of meme annotation")
+    container = st.container()
+    with container:
+        col1, col2 = st.columns([1, 2])
+        image = Image.open('examples/KaceyMusgraves1_FB.png')
+
+
+        col1.image(image, caption='Example meme #1')
+
+        video_file = open('annotation_submit_next.mp4', 'rb')
+        video_bytes = video_file.read()
+
+        col2.video(video_bytes)
+        st.markdown("### Have you downloaded the above PDF and read the instructions carefully?\n")
+        if st.session_state.pdf_downloaded:
+            if st.button("Alright, you've just downloaded the PDF!\n"
+                         "Please move on to the 'Annotation' section\n"
+                         "You can either click here or select 'Annotation' on the left side!"):
+                # set the 'go_to_annotation' flag to indicate that the user should move to the annotation section
+                st.session_state.go_to_annotation = True
+                st.experimental_set_query_params(section="Annotation")
+
+    # # Convert the first page of the PDF to an image
+    # image_content = convert_pdf_to_image(file_content)
+    # if image_content:
+    #     image = Image.open(BytesIO(image_content))
+    #     st.image(image, width=700)
+    # else:
+    #     st.write("Unable to preview the PDF.")
+
 
 def scroll_to_top():
     # Scroll to the top using custom HTML
-    st.markdown("""
-        <script>
-            window.scrollTo(0, 0);
-        </script>
-    """, unsafe_allow_html=True)
+    js = '''
+    <script>
+        var body = window.parent.document.querySelector(".main");
+        console.log(body);
+        body.scrollTop = 0;
+    </script>
+    '''
+    st.components.v1.html(js)
 
 def show_annotation():
     st.title("Meme Annotation")
@@ -173,7 +207,7 @@ def show_annotation():
     img_id = results[current_index]
     img_index = current_index + 1
 
-    with open('style.css', 'r') as css_file:
+    with open('assets/style.css', 'r') as css_file:
         st.markdown(f'<style>{css_file.read()}</style>', unsafe_allow_html=True)
 
     container = st.container()
@@ -185,7 +219,6 @@ def show_annotation():
         col1 = container.columns([2])[0]
         col2 = container.columns([1])[0]
         # col3 = container.columns([2])[0]
-
         col1.markdown("<h2>What kind of hateful meme is this?</h2>", unsafe_allow_html=True)
         col1.markdown(
             "Please enter the necessary information and select the appropriate options to annotate the meme:"
@@ -196,18 +229,20 @@ def show_annotation():
 
         show_image_fin(img_id, col1)
 
-        with open('style.css') as f:
+        with open('assets/style.css') as f:
             col2.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
-        next_button = col2.button("**Next**", key='next_button', help="Next Button", use_container_width=True)
+        next_button = col2.button("**Next**", key='next_button', help="Next Button", use_container_width=True, on_click=scroll_to_top)
+        #next_button = st.markdown("<button class='custom-next-button'>Next</button>", unsafe_allow_html=True)
 
         # Update the current index when the Next button is clicked
+
         if next_button:
             st.session_state.current_index += 1
             if st.session_state.current_index >= len(results):
                 st.session_state.current_index = 0
 
-            st.empty()  # Create an empty element as an anchor
-            st.markdown("<h2 style='visibility:hidden;'>Top of Page</h2>", unsafe_allow_html=True)  # Hide the anchor
+            col2.empty()  # Create an empty element as an anchor
+            col2.markdown("<h2 style='visibility:hidden;'>Top of Page</h2>", unsafe_allow_html=True)  # Hide the anchor
             st.experimental_rerun()
         # col2.button("Next", key=f'next_button_{img_id}', help="Next Button")
 
@@ -399,15 +434,26 @@ def show_annotation():
 
 
 def main():
-    # Sidebar options
-    option = st.sidebar.radio("Select an option", ("Introduction", "Annotation"))
+    # apply custom CSS styles
+    st.markdown('<link href="style.css" rel="stylesheet">', unsafe_allow_html=True)
+
+    current_section = st.experimental_get_query_params().get("section", ["Introduction"])[0]
+
+    option = st.sidebar.radio("Select an option", ("Introduction", "Annotation"), index=0 if current_section == "Introduction" else 1)
+    initialize_session_state_intro()
 
     # Display the selected section
     if option == "Introduction":
         show_introduction()
+        if st.session_state.go_to_annotation:
+            # switch the sidebar option to "Annotation"
+            st.experimental_set_query_params(section="Annotation")
+            show_annotation()
+            # reset the 'go_to_annotation' flag to avoid automatically going to the annotation section on subsequent visits
+            st.session_state.go_to_annotation = False
+
     elif option == "Annotation":
         show_annotation()
-
 
 if __name__ == "__main__":
     main()
