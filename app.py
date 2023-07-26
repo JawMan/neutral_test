@@ -155,7 +155,7 @@ def show_introduction():
         st.markdown("### Have you downloaded the above PDF and read the instructions carefully?\n")
         if st.session_state.pdf_downloaded:
             if st.button("Alright, you've just downloaded the PDF!\n"
-                         "Please move on to the 'Annotation' section\n"
+                         "Please move on to the 'Annotation' section.\n"
                          "You can either click here or select 'Annotation' on the left side!"):
                 # set the 'go_to_annotation' flag to indicate that the user should move to the annotation section
                 st.session_state.go_to_annotation = True
@@ -434,6 +434,14 @@ def show_annotation():
 
 
 def main():
+    # set the configuration options
+    st.set_theme({
+        "primaryColor": "#F38248",
+        "backgroundColor": "#FFFFFF",
+        "secondaryBackgroundColor": "#B6BEDE",
+        "textColor": "#31333F",
+        "font": "monospace"
+    })
     # apply custom CSS styles
     st.markdown('<link href="style.css" rel="stylesheet">', unsafe_allow_html=True)
 
