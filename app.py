@@ -434,14 +434,6 @@ def show_annotation():
 
 
 def main():
-    # set the configuration options
-    st.set_theme({
-        "primaryColor": "#F38248",
-        "backgroundColor": "#FFFFFF",
-        "secondaryBackgroundColor": "#B6BEDE",
-        "textColor": "#31333F",
-        "font": "monospace"
-    })
     # apply custom CSS styles
     st.markdown('<link href="style.css" rel="stylesheet">', unsafe_allow_html=True)
 
