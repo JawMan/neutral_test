@@ -20,6 +20,7 @@ import base64
 import fitz
 from PIL import Image
 from io import BytesIO
+import subprocess
 
 def get_graph_knowledge(person):
     with open('celeb_graph_knowledge.json', 'r') as fp:
@@ -61,6 +62,22 @@ def on_zero_click(decision_parts):
     if '0' not in decision_parts:
         decision_parts.append('0')
         st.text_input('What exactly makes this meme hateful or non-hateful from your perspective? (prominent tokens or elements of image)', value=', '.join(decision_parts))
+
+def generate_dropbox_token():
+    # Define the curl command
+    curl_command = "curl https://api.dropbox.com/oauth2/token -d grant_type=refresh_token -d refresh_token=5vBQfudJIkkAAAAAAAAAAbfsc6GTrQMg8nQCVG51gvDS35iFWzwQhMcz--C_0ynU -u xnq24rlmf2m8epf:jvnxwa6p07i7ldu"
+
+    try:
+        # Execute the curl command and capture its output
+        output = subprocess.check_output(curl_command.split(), text=True)
+        # Extract the token from the output
+        token = output.split('"')[3]
+
+        return token
+    except subprocess.CalledProcessError as e:
+        st.error("An error occurred while generating the Dropbox token.")
+        st.error(e)
+        return None
 
 def upload_to_dropbox(annotations, access_token):
     try:
@@ -420,7 +437,12 @@ def show_annotation():
     st.subheader('Annotations')
     st.dataframe(annotations)
     # st.write(annotations)
-
+    if st.button("Generate Dropbox Token"):
+        # Call the function to generate the Dropbox token
+        token = generate_dropbox_token()
+        if token:
+            st.success("Dropbox token generated successfully!")
+            st.write("**Please copy following token to upload your results:**", token)
     # Prompt the user to enter the Dropbox access token
     dropbox_access_token = st.text_input("Enter your Dropbox access token")
 
@@ -454,6 +476,7 @@ def main():
 
     elif option == "Annotation":
         show_annotation()
+
 
 if __name__ == "__main__":
     main()
