@@ -263,6 +263,20 @@ def show_annotation():
             st.experimental_rerun()
         # col2.button("Next", key=f'next_button_{img_id}', help="Next Button")
 
+        # Add a number input textbox for jumping to a specific meme
+        jump_to_meme = col2.number_input("Jump to meme (Please enter a number)", value=1, min_value=1,
+                                         max_value=len(results))
+
+        if col2.button("Go to meme", key='go_to_meme_button', on_click=scroll_to_top):
+            # update current index to jump to the selected meme
+            st.session_state.current_index = jump_to_meme - 1
+            # rerun the app to display the selected meme
+            st.experimental_rerun()
+        # Display information about the current meme index and the total number of memes
+        st.info(f"Current meme: {st.session_state.current_index + 1} of {len(results)}")
+        missing_memes = len(results) - st.session_state.current_index - 1
+        st.info(f"Missing memes: {missing_memes}")
+
         col1.write("**Image-text relation**\n\n"
                   "The definition of 'image-text relation' describes the connection\n"
                   "between the accompanying text and the image in a meme or other visual communication.\n"
@@ -275,7 +289,7 @@ def show_annotation():
             cols = st.columns(5)
             selected_options = []
             for i, option in enumerate(image_text_relation_options):
-                key = f"image_text_relation_{img_id}_{i}_{option}"  # Generate a unique key
+                key = f"image_text_relation_{img_id}_{i}_{option}"  # generate a unique key
                 selected = cols[i % 4].checkbox(option, key=key)
                 if selected:
                     selected_options.append(option)
@@ -476,7 +490,6 @@ def main():
 
     elif option == "Annotation":
         show_annotation()
-
 
 if __name__ == "__main__":
     main()
