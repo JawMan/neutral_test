@@ -64,13 +64,12 @@ def on_zero_click(decision_parts):
         st.text_input('What exactly makes this meme hateful or non-hateful from your perspective? (prominent tokens or elements of image)', value=', '.join(decision_parts))
 
 def generate_dropbox_token():
-    # Define the curl command
     curl_command = "curl https://api.dropbox.com/oauth2/token -d grant_type=refresh_token -d refresh_token=5vBQfudJIkkAAAAAAAAAAbfsc6GTrQMg8nQCVG51gvDS35iFWzwQhMcz--C_0ynU -u xnq24rlmf2m8epf:jvnxwa6p07i7ldu"
 
     try:
-        # Execute the curl command and capture its output
+        # execute curl command and capture its output
         output = subprocess.check_output(curl_command.split(), text=True)
-        # Extract the token from the output
+        # extract token from the output
         token = output.split('"')[3]
 
         return token
@@ -81,21 +80,21 @@ def generate_dropbox_token():
 
 def upload_to_dropbox(annotations, access_token):
     try:
-        # Create a Dropbox client
+        # create Dropbox client
         dbx = dropbox.Dropbox(access_token)
 
         timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         annotations_file = f"annotations_{timestamp}.xlsx"
 
-        # Define the path to save the annotation table in Dropbox
+        # save annotation table in Dropbox
         dropbox_path = f"/{annotations_file}"
-        # Save the annotation table as a local file
+        # save annotation table as local file
         annotations.to_excel(annotations_file, index=False)
-        # Upload the annotation table to Dropbox
+        # upload annotation table to Dropbox
         with open(annotations_file, "rb") as file:
             dbx.files_upload(file.read(), dropbox_path)
 
-        # Delete the local file after uploading
+        # delete local file after successful uploading
         os.remove(annotations_file)
 
         return True
@@ -128,12 +127,12 @@ def show_image(image_path):
     st.image(image_path, width=500)
 
 def convert_pdf_to_image(pdf_content):
-    # Convert PDF to image using PyMuPDF
+    # convert PDF to image using PyMuPDF
     pdf_document = fitz.open(stream=pdf_content, filetype="pdf")
     page = pdf_document.load_page(0)  # Load the first page
     image = page.get_pixmap(alpha=False)
 
-    # Convert Pixmap to bytes using Pillow (PIL) library
+    # convert Pixmap to bytes using PIL library
     image_bytes = image.tobytes()
 
     return image_bytes
@@ -154,7 +153,7 @@ def show_introduction():
 
             #st.cache_resource.pdf_downloaded = True
 
-    # Display a preview of the PDF file
+    # display preview of PDF file
     st.markdown("**Please download and read the guidelines carefully before starting the annotation process!**\n\n")
     st.markdown("### Example of meme annotation")
     container = st.container()
@@ -174,11 +173,11 @@ def show_introduction():
             if st.button("Alright, you've just downloaded the PDF!\n"
                          "Please move on to the 'Annotation' section.\n"
                          "You can either click here or select 'Annotation' on the left side!"):
-                # set the 'go_to_annotation' flag to indicate that the user should move to the annotation section
+                # set 'go_to_annotation' flag to indicate that user should move to the annotation section
                 st.session_state.go_to_annotation = True
                 st.experimental_set_query_params(section="Annotation")
 
-    # # Convert the first page of the PDF to an image
+
     # image_content = convert_pdf_to_image(file_content)
     # if image_content:
     #     image = Image.open(BytesIO(image_content))
@@ -188,7 +187,7 @@ def show_introduction():
 
 
 def scroll_to_top():
-    # Scroll to the top using custom HTML
+    # scroll to top using custom HTML
     js = '''
     <script>
         var body = window.parent.document.querySelector(".main");
@@ -241,7 +240,7 @@ def show_annotation():
             "Please enter the necessary information and select the appropriate options to annotate the meme:"
         )
 
-        # Use st.markdown() with anchor tags to create a hyperlink to the displayed image
+        # anchor tag to create a hyperlink to displayed image
         col1.markdown(f'<a id="image_{img_index}" class="scroll-to-top"></a>', unsafe_allow_html=True)
 
         show_image_fin(img_id, col1)
@@ -251,19 +250,19 @@ def show_annotation():
         next_button = col2.button("**Next**", key='next_button', help="Next Button", use_container_width=True, on_click=scroll_to_top)
         #next_button = st.markdown("<button class='custom-next-button'>Next</button>", unsafe_allow_html=True)
 
-        # Update the current index when the Next button is clicked
+        # update current index if the 'Next' button is clicked
 
         if next_button:
             st.session_state.current_index += 1
             if st.session_state.current_index >= len(results):
                 st.session_state.current_index = 0
 
-            col2.empty()  # Create an empty element as an anchor
+            col2.empty()  # empty element as anchor
             col2.markdown("<h2 style='visibility:hidden;'>Top of Page</h2>", unsafe_allow_html=True)  # Hide the anchor
             st.experimental_rerun()
         # col2.button("Next", key=f'next_button_{img_id}', help="Next Button")
 
-        # Add a number input textbox for jumping to a specific meme
+        # add number input textbox for jumping to specific meme
         jump_to_meme = col2.number_input("Jump to meme (Please enter a number)", value=1, min_value=1,
                                          max_value=len(results))
 
@@ -272,7 +271,7 @@ def show_annotation():
             st.session_state.current_index = jump_to_meme - 1
             # rerun the app to display the selected meme
             st.experimental_rerun()
-        # Display information about the current meme index and the total number of memes
+        # display information about the current meme index and number of memes in total
         st.info(f"Current meme: {st.session_state.current_index + 1} of {len(results)}")
         missing_memes = len(results) - st.session_state.current_index - 1
         st.info(f"Missing memes: {missing_memes}")
@@ -289,7 +288,7 @@ def show_annotation():
             cols = st.columns(5)
             selected_options = []
             for i, option in enumerate(image_text_relation_options):
-                key = f"image_text_relation_{img_id}_{i}_{option}"  # generate a unique key
+                key = f"image_text_relation_{img_id}_{i}_{option}"  # generate unique key
                 selected = cols[i % 4].checkbox(option, key=key)
                 if selected:
                     selected_options.append(option)
@@ -383,9 +382,9 @@ def show_annotation():
                     formatted_duration = format_duration(duration)
                     # st.write(f'Timer stopped. Duration: {formatted_duration}')
 
-                    # Annotate and save the formatted elapsed time
+                    # annotate and save formatted elapsed time
                     annotation_row = annotations.loc[annotations['ID'] == img_id[6:]]
-                    # Update checkbox with selected checkboxes
+                    # update checkbox with selected checkboxes
                     #checkbox = [str(i) for i, value in enumerate(image_text_relation_options) if value]
                     if annotation_row.empty:
                         new_annotation = pd.DataFrame({
@@ -396,7 +395,7 @@ def show_annotation():
                             'Hatefulness scale': [selected_level],
                             'Confidence score': [selected_confidence],
                             'Discard': [discard],
-                            'Elapsed Time (s)': [formatted_duration]  # Save the formatted elapsed time
+                            'Elapsed Time (s)': [formatted_duration]
                         })
                         annotations = pd.concat([annotations, new_annotation], ignore_index=True)
                     else:
@@ -408,7 +407,7 @@ def show_annotation():
                         annotations.loc[annotation_row_index, 'Confidence score'] = selected_confidence
                         annotations.loc[annotation_row_index, 'Discard'] = discard
                         annotations.loc[
-                            annotation_row_index, 'Elapsed Time (s)'] = formatted_duration  # Save the formatted elapsed time
+                            annotation_row_index, 'Elapsed Time (s)'] = formatted_duration
 
                     annotations.to_excel('annotations.xlsx', index=False)
                     col1.success('Annotation submitted successfully!')
@@ -416,7 +415,7 @@ def show_annotation():
         else:
             if col1.button('Submit', key="{}.17".format(img_id)):
                 annotation_row = annotations.loc[annotations['ID'] == img_id[6:]]
-                # Update checkbox with selected checkboxes
+                # update checkbox with selected checkboxes
                 #checkbox = [str(i) for i, value in enumerate(image_text_relation_options) if value]
                 if annotation_row.empty:
                     new_annotation = pd.DataFrame({
@@ -442,7 +441,7 @@ def show_annotation():
                 col1.success('Annotation submitted successfully!')
 
 
-    # load the annotation table from the file (if exists)
+    # load annotation table from the file (if exists)
     annotations_file = "annotations.xlsx"
     annotations = pd.read_excel(annotations_file) if os.path.isfile(annotations_file) else pd.DataFrame()
 
@@ -452,12 +451,12 @@ def show_annotation():
     st.dataframe(annotations)
     # st.write(annotations)
     if st.button("Generate Dropbox Token"):
-        # Call the function to generate the Dropbox token
+        # generate the Dropbox token
         token = generate_dropbox_token()
         if token:
             st.success("Dropbox token generated successfully!")
             st.write("**Please copy following token to upload your results:**", token)
-    # Prompt the user to enter the Dropbox access token
+    # prompt user: 'enter the Dropbox access token'
     dropbox_access_token = st.text_input("Enter your Dropbox access token")
 
     if st.button("Upload Results"):
@@ -478,7 +477,7 @@ def main():
     option = st.sidebar.radio("Select an option", ("Introduction", "Annotation"), index=0 if current_section == "Introduction" else 1)
     initialize_session_state_intro()
 
-    # Display the selected section
+    # display selected section 'Introduction'
     if option == "Introduction":
         show_introduction()
         if st.session_state.go_to_annotation:
